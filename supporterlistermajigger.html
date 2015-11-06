@@ -10,35 +10,54 @@
 
     <p>Automatic page crawling of a suggestion topic to find who supports and who doesn't.</p>
     <p>Enter a topic's ID or URL:</p>
-    <input type="textarea" id="topic" value="" style="display:block"></input><br>
+    <input type="textarea" id="topic" value="" style="width:200px;display:block"></input><br>
     <button id="get" onclick="get()" style="display:block">Find muh supporters</button>
     <button id="copy" onclick="copy()" style="display:none">Get copyable text pls</button>
     <p id="msg" style="display:none">ohai dere mr. inspect element</p>
     <div id="results">
-        <p id="list1" style="display:none">No supporters found.</p>
+        <p id="list1" style="display:none"></p>
         <ul id="supporters"></ul>
-        <p id="list2" style="display:none">No nonsupporters found.</p>
+        <p id="list2" style="display:none"></p>
         <ul id="nonsupporters"></ul>
-        <p id="list3" style="display:none">No posts found?</p>
+        <p id="list3" style="display:none"></p>
         <ul id="undecided"></ul>
     </div>
 </body>
 <script type="text/javascript" id="main">
-var r = { s: [], ns: [], un: [] };
-var op;
+var r, op;
+
+function init() {
+    r = { s: [], ns: [], un: [] };
+    op = "";
+    
+    document.getElementById("list1").innerHMTL = "No supporters found.";
+    document.getElementById("list2").innerHTML = "No nonsupporters found.";
+    document.getElementById("list3").innerHTML = "No posts found?";
+    
+    clear();
+}
+
+function clear() {
+    // clear all unsorted list elements
+    var lists = document.getElementsByTagName("ul");
+    for (var l in lists) while (lists[l].firstChild) lists[l].removeChild(lists[l].firstChild);
+}
 
 function getTopic() {
     var topic = document.getElementById("topic").value;
     try {
         topic = /topic\/(\d+)/.exec(topic)[1];
     } catch (e) {
-        topic = Integer.parseInt(topic);
+        topic = Number(topic);
     }
     return topic;
 }
 
 function get() {
     document.getElementById("msg").style.display = "block";
+    
+    init();
+    
     var t = getTopic();
 
     if (!t) {
@@ -137,9 +156,7 @@ function process(dom, page) {
 }
 
 function list() {
-    // clear all unsorted list elements
-    var lists = document.getElementsByTagName("ul");
-    for (var l in lists) while (lists[l].firstChild) lists[l].removeChild(lists[l].firstChild);
+    clear();
 
     var u, ul;
     if (r.s.length) {
