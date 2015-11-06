@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<body>
+     <h1>Supporter Listermajigger</h1>
+
+    	<h2>by <a href="https://github.com/Zro617">Zro617</a></h2>
+
+    <p>Automatic page crawling of a suggestion topic to find who supports and who doesn't.</p>
+    <p>Enter a topic's ID or URL:</p>
+    <input type="textarea" id="topic" value="" style="display:block"></input><br>
+    <button id="get" onclick="get()" style="display:block">Find muh supporters</button>
+    <button id="copy" onclick="copy()" style="display:none">Get copyable text pls</button>
+    <p id="msg" style="display:none">ohai dere mr. inspect element</p>
+    <div id="results">
+        <p id="list1" style="display:none">No supporters found.</p>
+        <ul id="supporters"></ul>
+        <p id="list2" style="display:none">No nonsupporters found.</p>
+        <ul id="nonsupporters"></ul>
+        <p id="list3" style="display:none">No posts found?</p>
+        <ul id="undecided"></ul>
+    </div>
+</body>
+<script type="text/javascript" id="main">
+var r = { s: [], ns: [], un: [] };
+var op;
+
+function getTopic() {
+    var topic = document.getElementById("topic").value;
+    try {
+        topic = /topic\/(\d+)/.exec(topic)[1];
+    } catch (e) {
+        topic = Integer.parseInt(topic);
+    }
+    return topic;
+}
+
+function get() {
+    document.getElementById("msg").style.display = "block";
+    var t = getTopic();
+
+    if (!t) {
+        document.getElementById("msg").innerHTML = "That is not a valid topic URL or ID.";
+        return;
+    }
+
+    document.getElementById("msg").innerHTML = "Sending requests...";
+    document.getElementById("copy").style.display = "none";
+    document.getElementById("list1").style.display = "none";
+    document.getElementById("list2").style.display = "none";
+    document.getElementById("list3").style.display = "none";
+    request(t, 1);
+}
+
+function request(id, page) {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "https://scratch.mit.edu/discuss/topic/" + id + "/?page=" + page, true);
+    xhr.responseType = "document";
+    xhr.onload = function () {
+        if (xhr.status == 200 && xhr.response.getElementsByClassName("blockpost roweven firstpost").length > 0) {
+            process(xhr.response, page);
+            request(id,page+1);
+        } else {
+            list();
+        }
+    };
+    xhr.send();
+}
+
+function process(dom, page) {
+    // find usernames and text content
+    var users = dom.getElementsByClassName("black username");
+    var posts = dom.getElementsByClassName("post_body_html");
+    if (posts.length == 0) return console.log("No posts found on page " + page);
+    if (users.length != posts.length) return console.error("# of users found does not match # of posts found.");
+    if (page == 1) op = users[0].innerHTML; // original post
+
+    for (var u, p, q, si, ni, ui, rx, test, i = 0; i < users.length; i++) {
+        u = users[i].innerHTML;
+        if (u != op) { // ignore all posts by the OP
+            p = posts[i];
+            q = p.getElementsByTagName("blockquote"); // find quotes
+            if (p.innerHTML != q[0]) while (q.length) p.removeChild(q[0]); // remove quotes
+            p = p.innerHTML.toString();
+
+            si = r.s.indexOf(u), ni = r.ns.indexOf(u), ui = r.un.indexOf(u);
+
+            rx = /((?!you(?:'re|r)? )(?:not?|don'?t) )?(support)(?!(?!.*[;:,.!]).*\?)/gi; // do not match "support" if it's inside a question
+            test = rx.exec(p);
+            if (test) {
+                if (test[1]) {
+                    // first capture group is the "no..." part
+                    if (si > -1) {
+                        r.s.splice(si, 1);
+                        console.log("Changed from Support to No Support: " + u);
+                    }
+                    if (ui > -1) {
+                        r.un.splice(ui, 1);
+                        console.log("Changed from Undecided to No Support: " + u);
+                    }
+                    if (ni == -1) {
+                        r.ns.push(u);
+                        console.log("Non-Supporter: " + u + ". '" + p + "'");
+                    }
+                } else if (test[2]) {
+                    // second capture group is the "support" part, only useful when "no..." wasn't matched
+                    if (ni > -1) {
+                        r.ns.splice(ni, 1);
+                        console.log("Changed from No Support to Support: " + u);
+                    }
+                    if (ui > -1) {
+                        r.un.splice(ui, -1);
+                        console.log("Changed from Undecided to Support: " + u);
+                    }
+                    if (si == -1) {
+                        r.s.push(u);
+                        console.log("Supporter: " + u + ". '" + p + "'");
+                    }
+                }
+            } else if (si == -1 && ni == -1 && ui == -1) {
+                // no match and not in lists
+                r.un.push(u);
+                console.log("Undecided: " + u + ". '" + p + "'");
+            } else {
+                // no match but already listed
+                console.log("Ignored: " + u + ". '" + p + "'");
+            }
+        }
+    }
+}
+
+function list() {
+    // clear all unsorted list elements
+    var lists = document.getElementsByTagName("ul");
+    for (var l in lists) while (lists[l].firstChild) lists[l].removeChild(lists[l].firstChild);
+
+    var u, ul;
+    if (r.s.length) {
+        ul = "";
+        for (u = 0; u < r.s.length; u++) ul += "<li>" + r.s[u] + "</li>";
+        document.getElementById("list1").innerHTML = "Supporters (" + r.s.length + "):";
+        document.getElementById("supporters").innerHTML = ul;
+    }
+    if (r.ns.length) {
+        ul = "";
+        for (u = 0; u < r.ns.length; u++) ul += "<li>" + r.ns[u] + "</li>";
+        document.getElementById("list2").innerHTML = "Non-Supporters (" + r.ns.length + "):";
+        document.getElementById("nonsupporters").innerHTML = ul;
+    }
+    if (r.un.length) {
+        ul = "";
+        for (u = 0; u < r.un.length; u++) ul += "<li>" + r.un[u] + "</li>";
+        document.getElementById("list3").innerHTML = "Undecided (" + r.un.length + "):";
+        document.getElementById("undecided").innerHTML = ul;
+    }
+    document.getElementById("list1").style.display = "block";
+    document.getElementById("list2").style.display = "block";
+    document.getElementById("list3").style.display = "block";
+    document.getElementById("copy").style.display = "block";
+    document.getElementById("msg").innerHTML = "Done.";
+}
+
+function copy() {
+    var t = "";
+    t += "[b]Supporters (" + r.s.length + "):[/b]\n" + r.s.join(", ") + "\n\n";
+    t += "[b]Non-Supporters (" + r.ns.length + "):[/b]\n" + r.ns.join(", ") + "\n\n";
+    t += "[b]Undecided (" + r.un.length + "):[/b]\n" + r.un.join(", ");
+    window.open("data:text/plain;base64," + btoa(t));
+}
+
+Array.prototype.clear = function () { this.length = 0; };
+Array.prototype.empty = function () { return this.length == 0; };
+Array.prototype.pushNew = function (e) { if (this.indexOf(e) == -1) this.push(e); };
+
+// event listeners for jsfiddle
+//document.getElementById("get").addEventListener('click', get);
+//document.getElementById("copy").addEventListener('click', copy);
+</script>
+</html>
