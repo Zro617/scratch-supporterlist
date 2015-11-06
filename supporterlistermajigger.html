@@ -75,18 +75,23 @@ function process(dom, page) {
     var posts = dom.getElementsByClassName("post_body_html");
     if (posts.length == 0) return console.log("No posts found on page " + page);
     if (users.length != posts.length) return console.error("# of users found does not match # of posts found.");
-    if (page == 1) op = users[0].innerHTML; // original post
+    if (page == 1) {
+    	op = users[0].innerHTML; // original post
+    	r.s.push(op);
+    }
 
     for (var u, p, q, si, ni, ui, rx, test, i = 0; i < users.length; i++) {
         u = users[i].innerHTML;
         if (u != op) { // ignore all posts by the OP
             p = posts[i];
             q = p.getElementsByTagName("blockquote"); // find quotes
+            // TODO: Check for "agreement" quoting
             if (p.innerHTML != q[0]) while (q.length) p.removeChild(q[0]); // remove quotes
             p = p.innerHTML.toString();
 
             si = r.s.indexOf(u), ni = r.ns.indexOf(u), ui = r.un.indexOf(u);
-
+            
+            // TODO: Include "as per this"
             rx = /((?!you(?:'re|r)? )(?:not?|don'?t) )?(support)(?!(?!.*[;:,.!]).*\?)/gi; // do not match "support" if it's inside a question
             test = rx.exec(p);
             if (test) {
@@ -94,38 +99,38 @@ function process(dom, page) {
                     // first capture group is the "no..." part
                     if (si > -1) {
                         r.s.splice(si, 1);
-                        console.log("Changed from Support to No Support: " + u);
+                        console.log("Support to No Support: " + u);
                     }
                     if (ui > -1) {
                         r.un.splice(ui, 1);
-                        console.log("Changed from Undecided to No Support: " + u);
+                        console.log("Undecided to No Support: " + u);
                     }
                     if (ni == -1) {
                         r.ns.push(u);
-                        console.log("Non-Supporter: " + u + ". '" + p + "'");
+                        console.log("Non-Supporter | " + u + ". '" + p + "'");
                     }
                 } else if (test[2]) {
                     // second capture group is the "support" part, only useful when "no..." wasn't matched
                     if (ni > -1) {
                         r.ns.splice(ni, 1);
-                        console.log("Changed from No Support to Support: " + u);
+                        console.log("No Support to Support: " + u);
                     }
                     if (ui > -1) {
                         r.un.splice(ui, -1);
-                        console.log("Changed from Undecided to Support: " + u);
+                        console.log("Undecided to Support: " + u);
                     }
                     if (si == -1) {
                         r.s.push(u);
-                        console.log("Supporter: " + u + ". '" + p + "'");
+                        console.log("Supporter     | " + u + ". '" + p + "'");
                     }
                 }
             } else if (si == -1 && ni == -1 && ui == -1) {
                 // no match and not in lists
                 r.un.push(u);
-                console.log("Undecided: " + u + ". '" + p + "'");
+                console.log("Undecided     | " + u + ". '" + p + "'");
             } else {
                 // no match but already listed
-                console.log("Ignored: " + u + ". '" + p + "'");
+                console.log("Ignored       | " + u + ". '" + p + "'");
             }
         }
     }
