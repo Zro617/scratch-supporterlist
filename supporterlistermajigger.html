@@ -108,18 +108,17 @@ function process(dom, page) {
             // get actual text content of post
             // if a post is just blockstuff, retain original post anyways
             text = justtextpls(post).trim() || post.innerHTML;
-            
-            // DEPRECATED: find quotes
-            //quotes = post.getElementsByTagName("blockquote");
+            quotes = post.getElementsByTagName("blockquote");
             
             // Check for "agreement" quoting (NOT TESTED YET)
             // posts that contain nothing in their body except a quote,
             // or that contain a common phrase like "as per this" will
             // use the quoted text instead
             regex = /^(as per this|(?:i )?agreed?|\^+|\+\d+)$/gi;
-            while (post.firstChild && (text=="" || regex.test(text))) {
-            	post = post.firstChild;
+            while (quotes.length && (text=="" || regex.test(text))) {
+            	post = quotes[0];
             	text = justtextpls(post).trim();
+            	quotes = post.getElementsByTagName("blockquote");
             }
             
             si = result.supporters.indexOf(user),
