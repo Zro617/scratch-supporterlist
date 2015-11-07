@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+<body>
+     <div class="post_body_html">
+       <blockquote>
+         no support sample text
+       </blockquote>
+       as per this
+     </div>
+     <div class="post_body_html">
+       <blockquote>
+         i am a potato fear me rawr
+       </blockquote>
+       wat
+     </div>
+     <p id="msg"></p>
+</body>
+<script type="text/javascript" id="test">
+// TESTING PURPOSES ONLY, NOT OFFICIAL CODE
+
+function test() {
+    var results = [];
+    var posts = dom.getElementsByClassName("post_body_html");
+    for (var post, text, regex, test, i = 0; i < posts.length; i++) {
+        post = posts[i];
+        console.log("BEFORE SEARCH: "+post);
+        text = quotesearch(post);
+        console.log("AFTER SEARCH:  "+text);
+        regex = /((?!you(?:'re|r)? )(?:not?|don'?t) )?(support|62807079593)(?!(?!.*[;:,.!]).*\?)/gi;
+        test = regex.exec(text);
+        console.log(test);
+        results.push(text);
+    }
+    document.getElementById("msg").innerHTML = "Test results:\n" + results.join("\n");
+}
+
+function quotesearch(post) {
+  var regex = /^(as per this|(?:i )?agreed?|\^+|\+\d+)$/gi;
+  
+  var text = justtextpls(post).trim() || post.innerHTML;
+  var quotes = post.getElementsByTagName("blockquote");
+  while (quotes.length && (text=="" || regex.test(text))) {
+      post = quotes[0];
+      text = justtextpls(post).trim();
+      quotes = post.getElementsByTagName("blockquote");
+  }
+  return text;
+}
+
+function justtextpls(element) {
+    return element.cloneNode(false).innerHTML;
+}
+
+test();
+</script>
+</html>
