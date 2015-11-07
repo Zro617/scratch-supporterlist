@@ -105,13 +105,16 @@ function process(dom, page) {
             p = posts[i];
             q = p.getElementsByTagName("blockquote"); // find quotes
             // TODO: Check for "agreement" quoting
-            if (p.innerHTML != q[0]) while (q.length) p.removeChild(q[0]); // remove quotes
+            rx = /(as per this|^+|\+1)/gi;
+            if (p.lastChild != q[0]) while (q.length) p.removeChild(q[0]); // remove quotes
             p = p.innerHTML.toString();
 
             si = r.s.indexOf(u), ni = r.ns.indexOf(u), ui = r.un.indexOf(u);
             
-            // TODO: Include "as per this"
-            rx = /((?!you(?:'re|r)? )(?:not?|don'?t) )?(support)(?!(?!.*[;:,.!]).*\?)/gi; // do not match "support" if it's inside a question
+            // TODO: Add referral regex
+            rx = /((?!you(?:'re|r)? )(?:not?|don'?t) )?(support|62807079593)(?!(?!.*[;:,.!]).*\?)/gi;
+            // do not match "support" if it's inside a question
+            // p.s. the long number thing is supposed to be support in base 10
             test = rx.exec(p);
             if (test) {
                 if (test[1]) {
