@@ -24,10 +24,10 @@
     </div>
 </body>
 <script type="text/javascript" id="main">
-var r, op;
+var result, op;
 
 function init() {
-    r = { s: [], ns: [], un: [] };
+    result = { supporters: [], nonsupporters: [], unknown: [] };
     op = "";
     
     document.getElementById("list1").innerHMTL = "No supporters found.";
@@ -43,34 +43,35 @@ function clear() {
     for (var l in lists) while (lists[l].firstChild) lists[l].removeChild(lists[l].firstChild);
 }
 
+function message(text) {
+    document.getElementById("msg").innerHTML = msg;
+    document.getElementById("msg").style.display = "block";
+}
+
 function getTopic() {
     var topic = document.getElementById("topic").value;
     try {
         topic = /topic\/(\d+)/.exec(topic)[1];
     } catch (e) {
+    	// TODO: Catch more invalid urls
         topic = Number(topic);
     }
     return topic;
 }
 
 function get() {
-    document.getElementById("msg").style.display = "block";
-    
     init();
-    
-    var t = getTopic();
-
-    if (!t) {
-        document.getElementById("msg").innerHTML = "That is not a valid topic URL or ID.";
+    var topicId = getTopic();
+    if (!topicId) {
+        message("That is not a valid topic URL or ID.");
         return;
     }
-
-    document.getElementById("msg").innerHTML = "Sending requests...";
+    message("Sending requests...");
     document.getElementById("copy").style.display = "none";
     document.getElementById("list1").style.display = "none";
     document.getElementById("list2").style.display = "none";
     document.getElementById("list3").style.display = "none";
-    request(t, 1);
+    request(topicId, 1);
 }
 
 function request(id, page) {
@@ -96,63 +97,77 @@ function process(dom, page) {
     if (users.length != posts.length) return console.error("# of users found does not match # of posts found.");
     if (page == 1) {
     	op = users[0].innerHTML; // original post
-    	r.s.push(op);
+    	result.supporters.push(op);
     }
-
-    for (var u, p, q, si, ni, ui, rx, test, i = 0; i < users.length; i++) {
-        u = users[i].innerHTML;
-        if (u != op) { // ignore all posts by the OP
-            p = posts[i];
-            q = p.getElementsByTagName("blockquote"); // find quotes
-            // TODO: Check for "agreement" quoting
-            rx = /(as per this|^+|\+1)/gi;
-            if (p.lastChild != q[0]) while (q.length) p.removeChild(q[0]); // remove quotes
-            p = p.innerHTML.toString();
-
-            si = r.s.indexOf(u), ni = r.ns.indexOf(u), ui = r.un.indexOf(u);
+    
+    for (var user, post, text, si, ni, ui, regex, test, i = 0; i < users.length; i++) {
+        user = users[i].innerHTML;
+        // ignore all posts by the OP
+        if (user != op) {
+            post = posts[i];
+            // get actual text content of post
+            // if a post is just blockstuff, retain original post anyways
+            text = justtextpls(post).trim() || post.innerHTML;
             
-            // TODO: Add referral regex
-            rx = /((?!you(?:'re|r)? )(?:not?|don'?t) )?(support|62807079593)(?!(?!.*[;:,.!]).*\?)/gi;
+            // DEPRECATED: find quotes
+            //quotes = post.getElementsByTagName("blockquote");
+            
+            // Check for "agreement" quoting (NOT TESTED YET)
+            // posts that contain nothing in their body except a quote,
+            // or that contain a common phrase like "as per this" will
+            // use the quoted text instead
+            regex = /^(as per this|(?:i )?agreed?|\^+|\+\d+)$/gi;
+            while (post.firstChild && (text=="" || regex.test(text))) {
+            	post = post.firstChild;
+            	text = justtextpls(post).trim();
+            }
+            
+            si = result.supporters.indexOf(user),
+            ni = result.nonsupporters.indexOf(user),
+            ui = result.unknown.indexOf(user);
+            
+            // now we have our important text, let's test it
+            regex = /((?!you(?:'re|r)? )(?:not?|don'?t) )?(support|62807079593)(?!(?!.*[;:,.!]).*\?)/gi;
             // do not match "support" if it's inside a question
-            // p.s. the long number thing is supposed to be support in base 10
-            test = rx.exec(p);
+            // p.s. the long number thing is supposed to be support in base 10 :P
+            test = regex.exec(text);
             if (test) {
                 if (test[1]) {
                     // first capture group is the "no..." part
                     if (si > -1) {
-                        r.s.splice(si, 1);
-                        console.log("Support to No Support: " + u);
+                        result.supporters.splice(si, 1);
+                        console.log("Support to No Support: " + user);
                     }
                     if (ui > -1) {
-                        r.un.splice(ui, 1);
-                        console.log("Undecided to No Support: " + u);
+                        result.unknown.splice(ui, 1);
+                        console.log("Undecided to No Support: " + user);
                     }
                     if (ni == -1) {
-                        r.ns.push(u);
-                        console.log("Non-Supporter | " + u + ". '" + p + "'");
+                        result.nonsupporters.push(user);
+                        console.log("Non-Supporter | " + user + ". '" + post + "'");
                     }
                 } else if (test[2]) {
                     // second capture group is the "support" part, only useful when "no..." wasn't matched
                     if (ni > -1) {
-                        r.ns.splice(ni, 1);
-                        console.log("No Support to Support: " + u);
+                        result.nonsupporters.splice(ni, 1);
+                        console.log("No Support to Support: " + user);
                     }
                     if (ui > -1) {
-                        r.un.splice(ui, -1);
-                        console.log("Undecided to Support: " + u);
+                        result.unknown.splice(ui, -1);
+                        console.log("Undecided to Support: " + user);
                     }
                     if (si == -1) {
-                        r.s.push(u);
-                        console.log("Supporter     | " + u + ". '" + p + "'");
+                        result.supporters.push(user);
+                        console.log("Supporter     | " + user + ". '" + post + "'");
                     }
                 }
             } else if (si == -1 && ni == -1 && ui == -1) {
                 // no match and not in lists
-                r.un.push(u);
-                console.log("Undecided     | " + u + ". '" + p + "'");
+                result.unknown.push(user);
+                console.log("Undecided     | " + user + ". '" + post + "'");
             } else {
                 // no match but already listed
-                console.log("Ignored       | " + u + ". '" + p + "'");
+                console.log("Ignored       | " + user + ". '" + post + "'");
             }
         }
     }
@@ -162,37 +177,41 @@ function list() {
     clear();
 
     var u, ul;
-    if (r.s.length) {
+    if (result.supporters.length) {
         ul = "";
-        for (u = 0; u < r.s.length; u++) ul += "<li>" + r.s[u] + "</li>";
-        document.getElementById("list1").innerHTML = "Supporters (" + r.s.length + "):";
+        for (u = 0; u < result.supporters.length; u++) ul += "<li>" + result.supporters[u] + "</li>";
+        document.getElementById("list1").innerHTML = "Supporters (" + result.supporters.length + "):";
         document.getElementById("supporters").innerHTML = ul;
     }
-    if (r.ns.length) {
+    if (result.nonsupporters.length) {
         ul = "";
-        for (u = 0; u < r.ns.length; u++) ul += "<li>" + r.ns[u] + "</li>";
-        document.getElementById("list2").innerHTML = "Non-Supporters (" + r.ns.length + "):";
+        for (u = 0; u < result.nonsupporters.length; u++) ul += "<li>" + result.nonsupporters[u] + "</li>";
+        document.getElementById("list2").innerHTML = "Non-Supporters (" + result.nonsupporters.length + "):";
         document.getElementById("nonsupporters").innerHTML = ul;
     }
-    if (r.un.length) {
+    if (result.unknown.length) {
         ul = "";
-        for (u = 0; u < r.un.length; u++) ul += "<li>" + r.un[u] + "</li>";
-        document.getElementById("list3").innerHTML = "Undecided (" + r.un.length + "):";
+        for (u = 0; u < result.unknown.length; u++) ul += "<li>" + result.unknown[u] + "</li>";
+        document.getElementById("list3").innerHTML = "Undecided (" + result.unknown.length + "):";
         document.getElementById("undecided").innerHTML = ul;
     }
     document.getElementById("list1").style.display = "block";
     document.getElementById("list2").style.display = "block";
     document.getElementById("list3").style.display = "block";
     document.getElementById("copy").style.display = "block";
-    document.getElementById("msg").innerHTML = "Done.";
+    message("Done.");
 }
 
 function copy() {
     var t = "";
-    t += "[b]Supporters (" + r.s.length + "):[/b]\n" + r.s.join(", ") + "\n\n";
-    t += "[b]Non-Supporters (" + r.ns.length + "):[/b]\n" + r.ns.join(", ") + "\n\n";
-    t += "[b]Undecided (" + r.un.length + "):[/b]\n" + r.un.join(", ");
+    t += "[b]Supporters (" + result.supporters.length + "):[/b]\n" + result.supporters.join(", ") + "\n\n";
+    t += "[b]Non-Supporters (" + result.nonsupporters.length + "):[/b]\n" + result.nonsupporters.join(", ") + "\n\n";
+    t += "[b]Undecided (" + result.unknown.length + "):[/b]\n" + result.unknown.join(", ");
     window.open("data:text/plain;base64," + btoa(t));
+}
+
+function justtextpls(element) {
+    return element.cloneNode(false).innerHTML;
 }
 
 Array.prototype.clear = function () { this.length = 0; };
