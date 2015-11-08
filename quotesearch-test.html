@@ -23,7 +23,7 @@
 
 function test() {
     var results = [];
-    var posts = dom.getElementsByClassName("post_body_html");
+    var posts = document.getElementsByClassName("post_body_html");
     for (var post, text, regex, test, i = 0; i < posts.length; i++) {
         post = posts[i];
         console.log("BEFORE SEARCH: "+post);
