@@ -44,7 +44,7 @@ function clear() {
 }
 
 function message(text) {
-    document.getElementById("msg").innerHTML = msg;
+    document.getElementById("msg").innerHTML = text;
     document.getElementById("msg").style.display = "block";
 }
 
@@ -143,7 +143,7 @@ function process(dom, page) {
                     }
                     if (ni == -1) {
                         result.nonsupporters.push(user);
-                        console.log("Non-Supporter | " + user + ". '" + post + "'");
+                        console.log("Non-Supporter | " + user + ". '" + HtmlToString(post) + "'");
                     }
                 } else if (test[2]) {
                     // second capture group is the "support" part, only useful when "no..." wasn't matched
@@ -157,16 +157,16 @@ function process(dom, page) {
                     }
                     if (si == -1) {
                         result.supporters.push(user);
-                        console.log("Supporter     | " + user + ". '" + post + "'");
+                        console.log("Supporter     | " + user + ". '" + HtmlToString(post) + "'");
                     }
                 }
             } else if (si == -1 && ni == -1 && ui == -1) {
                 // no match and not in lists
                 result.unknown.push(user);
-                console.log("Undecided     | " + user + ". '" + post + "'");
+                console.log("Undecided     | " + user + ". '" + HtmlToString(post) + "'");
             } else {
                 // no match but already listed
-                console.log("Ignored       | " + user + ". '" + post + "'");
+                console.log("Ignored       | " + user + ". '" + HtmlToString(post) + "'");
             }
         }
     }
@@ -211,6 +211,11 @@ function copy() {
 
 function justtextpls(element) {
     return element.cloneNode(false).innerHTML;
+}
+
+function HtmlToString(obj) {
+    if (typeof obj === 'object' && navigator.userAgent.indexOf("Chrome") > -1) return obj.innerHTML;
+    else return obj;
 }
 
 Array.prototype.clear = function () { this.length = 0; };
