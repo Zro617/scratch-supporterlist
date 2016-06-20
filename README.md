@@ -1,6 +1,8 @@
 # scratch-supporterlist
 Automated listing of a suggestion's supporters and nonsupporters.
 
+**NOTE: Moved to http://zro617.github.io/projects/census.html**
+
 You know, I wasn't one to heavily favor the simple replies of "support" and "no support" on [Scratch's Suggestion forums](https://scratch.mit.edu/discuss/1/) but then I thought, maybe I could take advantage of this. Instead of cumbersomely flipping through pages and counting, listing, and organizing all the supporters and nonsupporters, I could let a computer do all this for me.
 
 Sure enough, this program was designed to do exactly that. I'm not trying to make the most pretty webpage for it because I want the focus to be on the application's usefulness. I hope this serves a great deal of satisfaction by saving you a lot of time.
